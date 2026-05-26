@@ -1,0 +1,42 @@
+BEGIN main
+	SET currentStoreData to first item in CALL storeInit
+	SET currentStore to second item in CALL storeInit
+	CALL displayStore with data inputs of currentStore, and currentStoreData
+
+END main
+
+BEGIN displayStore
+	DISPLAY restaurant name USING currentStore
+	DISPLAY menu items USING currentStoreData
+	DISPLAY prices USING currentStoreData
+	DISPLAY descriptions USING currentStoreData
+	DISPLAY statistics USING currentStoreData
+END displayStore
+
+
+BEGIN storeInit
+	GET stores from storage
+	IF stores does not exist
+		CREATE placeholderStore data
+		CREATE stores array containing placeholderStore
+		SAVE stores into storage
+	END IF
+	GET currentStore from storage
+	IF currentStore does not exist
+		SET currentStore to "placeholderStore"
+		SAVE currentStore into storage
+	END IF
+	GET stores from storage
+	CONVERT stores into an accessible array
+	SEARCH stores for currentStore
+	IF currentStore is not found in stores
+		CREATE placeholderStore data
+		ADD placeholderStore to stores
+		SAVE updated stores into storage
+		SET currentStore to "placeholderStore"
+		SAVE currentStore into storage
+	END IF
+	SEARCH stores for currentStore
+	SET selectedStoreData to matching store
+	RETURN selectedStoreData, currentStore
+END storeInit 
