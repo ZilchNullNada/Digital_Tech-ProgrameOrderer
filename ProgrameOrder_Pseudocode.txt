@@ -17,6 +17,12 @@ BEGIN addnewItem
 	PROMPT itemName
 	IF itemName is in currentStoreData items data THEN
 		DISPLAY Item already exists
+		SET action to PROMPT want to modify(1)/remove(2) that time or Cancel action(3)
+		IF action = modify or 1 THEN
+			CALL modifyItem with data input of itemName, currentStoreData
+		ELSE IF action = remove or 2 THEN
+			CALL removeItem with data input of itemName
+		END IF
 		RETURN
 	END IF
 	SET editing to true
@@ -36,10 +42,45 @@ BEGIN addnewItem
 		description = itemDescription
 	END CREATE
 	ADD newItem currentStoreData items data
-	SAVE currentStoreData to stores
-	SAVE stores to storage
+	SAVE updated currentStoreData to stores
+	SAVE updated stores to storage
 	CALL displayStore with data inputs of currentStore, and currentStoreData
 END addnewItem
+
+BEGIN modifyItem
+	SET itemData to GET itemName data from currentStoreData
+	SET modifying to true
+	WHILE modifying = true
+		DISPLAY itemData
+		PROMPT newItemPrice
+		PROMPT newItemProductionCost
+		PROMPT newItemDescription
+		PROMPT modificationComplete
+		IF modificationComplete = y
+			modifying = false
+		END IF
+	END WHILE
+	SET itemName itemData to
+		price = newItemPrice
+		productionCost = newItemProductionCost
+		description = newItemDescription
+	END SET
+	SAVE updated itemName to currentStoreData item data
+	SAVE updated currentStoreData to stores
+	SAVE updated stores to storage
+	CALL displayStore with data inputs of currentStore, and currentStoreData
+END modifyItem
+
+BEGIN removeItem
+	PROMPT confirmRemoval
+	IF confirmRemoval = y
+		REMOVE itemName from currentStoreData
+		SAVE updated currentStoreData to stores
+		SAVE updated stores to storage
+		CALL displayStore with data inputs of currentStore, and currentStoreData
+	END IF
+	RETURN
+END removeItem
 
 BEGIN storeInit
 	GET stores from storage
