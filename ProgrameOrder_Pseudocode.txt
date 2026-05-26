@@ -2,7 +2,7 @@ BEGIN main
 	SET currentStoreData to first item in CALL storeInit
 	SET currentStore to second item in CALL storeInit
 	CALL displayStore with data inputs of currentStore, and currentStoreData
-
+	ONTRIGGER CALL addnewItem with data inputs of currentStore, and currentStoreData
 END main
 
 BEGIN displayStore
@@ -13,6 +13,33 @@ BEGIN displayStore
 	DISPLAY statistics USING currentStoreData
 END displayStore
 
+BEGIN addnewItem
+	PROMPT itemName
+	IF itemName is in currentStoreData items data THEN
+		DISPLAY Item already exists
+		RETURN
+	END IF
+	SET editing to true
+	WHILE editing = true
+		PROMPT itemPrice
+		PROMPT itemProductionCost
+		PROMPT itemDescription
+		PROMPT itemComplete
+		IF itemComplete = y
+			editing = false
+		END IF
+	END WHILE
+	CREATE newItem WITH data
+		name = itemName
+		price = itemPrice
+		productionCost = itemProductionCost
+		description = itemDescription
+	END CREATE
+	ADD newItem currentStoreData items data
+	SAVE currentStoreData to stores
+	SAVE stores to storage
+	CALL displayStore with data inputs of currentStore, and currentStoreData
+END addnewItem
 
 BEGIN storeInit
 	GET stores from storage
