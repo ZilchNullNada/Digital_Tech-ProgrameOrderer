@@ -31,8 +31,10 @@ BEGIN addnewCustomer
 				PROMPT itemQty
 				IF itemQty > 0 THEN
 					removeItemloop = FALSE
+				END IF
 			ELSE IF removeItemFromOrder = y THEN
 				removeItemloop = FALSE
+			END IF
 		END WHILE
 		IF removeItemFromOrder = n THEN
 			SET orderName to "order" JOINING numOrders
@@ -41,6 +43,7 @@ BEGIN addnewCustomer
 				Qty = itemQty
 				price = price of selectItem
 			END ADD
+		END IF
 		FOR order in newCustomer GET orders
 			ADD price from order to currentTotalPrice
 		DISPLAY newCustomer orders AND currentTotalPrice
