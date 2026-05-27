@@ -1,38 +1,76 @@
 BEGIN main
 	SET currentStoreData to first item in CALL storeInit
 	SET currentStore to second item in CALL storeInit
-	CALL displayStore with data inputs of currentStore, and currentStoreData
-	ONTRIGGER CALL addnewItem with data inputs of currentStore, and currentStoreData
+	CALL displayStore with data inputs of currentStore, currentStoreData
+	ONTRIGGER CALL addnewItem with data inputs of currentStore,  currentStoreData
+	ONTRIGGER CALL addnewCustomer with data inputs of currentStore,  currentStoreData
 END main
 
-BEGIN displayStore
-	DISPLAY restaurant name USING currentStore
-	DISPLAY menu items USING currentStoreData
-	DISPLAY prices USING currentStoreData
-	DISPLAY descriptions USING currentStoreData
-	DISPLAY statistics USING currentStoreData
-END displayStore
+BEGIN addnewCustomer 
+	PROMPT customerName
+	SET numOrders to 0
+	SET selectingItems to TRUE
+
+	CREATE newCustomer WITH data
+		name = customerName
+		orders = NULL
+	END CREATE 
+
+	WHILE selectingItems = TRUE DO
+		SET currentTotalPrice to 0
+		CALL displayStore AND PROMPT selectItem
+		DISPLAY price, description of selectItem
+		PROMPT itemQty
+		IF itemQty <= 0 THEN
+			SET removeItemloop to TRUE
+		END IF
+
+		WHILE removeItemloop = TRUE  DO
+			PROMPT removeItemFromOrder
+			IF removeItemFromOrder = n THEN
+				PROMPT itemQty
+				IF itemQty > 0 THEN
+					removeItemloop = FALSE
+			ELSE IF removeItemFromOrder = y THEN
+				removeItemloop = FALSE
+		END WHILE
+		IF removeItemFromOrder = n THEN
+			SET orderName to "order" JOINING numOrders
+			ADD orderName to newCustomer WITH data	
+				item = selectItem
+				Qty = itemQty
+				price = price of selectItem
+			END ADD
+		FOR order in newCustomer GET orders
+			ADD price from order to currentTotalPrice
+		DISPLAY newCustomer orders AND currentTotalPrice
+		PROMPT continueSelectingItemes
+		IF continueSelectingItemes = n THEN
+			selectingItems = FALSE 
+		END IF 
+	END WHILE
+END newCustomer
 
 BEGIN addnewItem
 	PROMPT itemName
+	SET editing to TRUE
 	IF itemName is in currentStoreData items data THEN
 		DISPLAY Item already exists
-		SET action to PROMPT want to modify(1)/remove(2) that time or Cancel action(3)
+		SET action to PROMPT want to modify(1)/remove(2) that item or Cancel action(3)
 		IF action = modify or 1 THEN
-			CALL modifyItem with data input of itemName, currentStoreData
+			CALL modifyItem with data input of itemName, currentStore, currentStoreData
 		ELSE IF action = remove or 2 THEN
-			CALL removeItem with data input of itemName
+			CALL removeItem with data input of itemName, currentStore, currentStoreData
 		END IF
 		RETURN
 	END IF
-	SET editing to true
-	WHILE editing = true
+	WHILE editing = TRUE DO
 		PROMPT itemPrice
 		PROMPT itemProductionCost
 		PROMPT itemDescription
 		PROMPT itemComplete
 		IF itemComplete = y
-			editing = false
+			editing = FALSE
 		END IF
 	END WHILE
 	CREATE newItem WITH data
@@ -49,15 +87,15 @@ END addnewItem
 
 BEGIN modifyItem
 	SET itemData to GET itemName data from currentStoreData
-	SET modifying to true
-	WHILE modifying = true
+	SET modifying to TRUE
+	WHILE modifying = TRUE DO
 		DISPLAY itemData
 		PROMPT newItemPrice
 		PROMPT newItemProductionCost
 		PROMPT newItemDescription
 		PROMPT modificationComplete
 		IF modificationComplete = y
-			modifying = false
+			modifying = FALSE
 		END IF
 	END WHILE
 	SET itemName itemData to
@@ -81,6 +119,14 @@ BEGIN removeItem
 	END IF
 	RETURN
 END removeItem
+
+BEGIN displayStore
+	DISPLAY restaurant name USING currentStore
+	DISPLAY menu items USING currentStoreData
+	DISPLAY prices USING currentStoreData
+	DISPLAY descriptions USING currentStoreData
+	DISPLAY statistics USING currentStoreData
+END displayStore
 
 BEGIN storeInit
 	GET stores from storage
