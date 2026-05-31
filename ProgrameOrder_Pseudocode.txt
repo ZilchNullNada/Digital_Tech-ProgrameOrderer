@@ -35,6 +35,8 @@ BEGIN addnewCustomer
 		name = "order" JOINING orderNumber
 		items = empty array
 		totalPrice = 0
+		status = "pending"
+
 	END CREATE
 
 	WHILE selectingItems = TRUE DO
@@ -88,7 +90,7 @@ BEGIN selectCustomerOrder
 	SET orders to customerData orders
 	FOR each order in orders
 		SET choice to index of order within orders
-		DISPLAY choice+1, name from order, totalPrice from order
+		DISPLAY choice+1, name from order, status from order, totalPrice from order
 	END FOR
 	PROMPT selectedOrder
 	IF selectedOrder > 0
@@ -98,13 +100,36 @@ BEGIN selectCustomerOrder
 	END IF
 END selectCustomerOrder
 
+BEGIN updateOrderStatus
+
+    DISPLAY Current Status: status from selectedOrderData
+
+    PROMPT newStatus "pending(1)/preparing(2)/completed(3)"
+
+    IF newStatus = 1 OR pending THEN
+        SET status in selectedOrderData to "pending"
+
+    ELSE IF newStatus = 2 OR preparing THEN
+        SET status in selectedOrderData to "preparing"
+
+    ELSE IF newStatus = 3 OR completed THEN
+        SET status in selectedOrderData to "completed"
+
+    END IF
+
+	UPDATE orders where matching selectedOrderData
+	SET orders[selectedOrderIndex] to selectedOrderData
+    SAVE updated currentStoreData to stores
+    SAVE updated stores to storage
+	
+END updateOrderStatus
 
 BEGIN removeCustomerOrder
 	SET customerData to GET customerName from currentStoreData customer data
 	SET orders to customerData orders
 	FOR each order in orders
 		SET choice to index of order within orders
-		DISPLAY choice+1, name from order, totalPrice from order
+		DISPLAY choice+1, name from order, status from order, totalPrice from order
 	END FOR
 	PROMPT selectedOrder
 	IF selectedOrder > 0
@@ -136,7 +161,7 @@ BEGIN modifyOrdercustomer
 			SET selectedOrderIndex to selectedOrder - 1
 			SET selectedOrderData to orders[selectedOrder-1]
 
-			SET editAction to PROMPT modify quantity(1)/remove item(2)/cancel(3)
+			SET editAction to PROMPT modify quantity(1)/remove item(2)/ change status(3)/ cancel(4)
 
 			IF editAction = modify OR 1 THEN
 				PROMPT newQty
@@ -154,8 +179,10 @@ BEGIN modifyOrdercustomer
 				REMOVE selectedOrderData from orders
 				SET numOrders to numOrders - 1
 				
+			ELSE IF editAction = status OR 3 THEN
+    			CALL updateOrderStatus
 
-			ELSE IF editAction = cancel OR 3 THEN
+			ELSE IF editAction = cancel OR 4 THEN
 				orderSelecting = FALSE
 			END IF
 
