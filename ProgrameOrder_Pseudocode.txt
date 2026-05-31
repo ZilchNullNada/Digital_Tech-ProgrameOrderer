@@ -12,25 +12,37 @@ BEGIN addnewCustomer
 	SET selectingItems to TRUE
 	IF customerName is in currentStoreData customer data THEN
 		DISPLAY Customer already exists
-		SET action to PROMPT "Do you want to modify(1)/remove(2) that customer's order or Cancel action(3)"
-		IF action = modify or 1 THEN
-			CALL modifyOrdercustomer with data input of customerName, currentStore, currentStoreData
-		ELSE IF action = remove or 2 THEN
+		SET action to PROMPT
+		"Create Modify existing order(1)/ Remove order(2)/ Remove customer(3)/ Cancel(4)"
+		IF action = modify OR 1 THEN
+			CALL selectCustomerOrder with data input of customerName, currentStore, currentStoreData
+		ELSE IF action = remove OR 2 THEN
+			CALL removeCustomerOrder with data input of customerName, currentStore, currentStoreData
+		ELSE IF action = removeCustomer OR 3 THEN
 			CALL removeOrdercustomer with data input of customerName, currentStore, currentStoreData
 		END IF
 		RETURN
 	END IF
 
 	CREATE newCustomer WITH data
-		name = customerName
-		orders = empty array
-	END CREATE 
+	name = customerName
+	orders = empty array
+	END CREATE
+
+	SET orderNumber to 1
+
+	CREATE newOrder WITH data
+		name = "order" JOINING orderNumber
+		items = empty array
+		totalPrice = 0
+	END CREATE
 
 	WHILE selectingItems = TRUE DO
 		SET currentTotalPrice to 0
 		CALL displayStore AND PROMPT selectItem
 		DISPLAY price, description of selectItem
 		PROMPT itemQty
+		SET removeItemloop to FALSE
 		IF itemQty <= 0 THEN
 			SET removeItemloop to TRUE
 		END IF
@@ -47,33 +59,69 @@ BEGIN addnewCustomer
 			END IF
 		END WHILE
 		IF removeItemFromOrder = n THEN
-			SET orderName to "order" JOINING numOrders
-			ADD orderName to newCustomer WITH data	
+			ADD item to newOrder items WITH data
 				item = selectItem
 				Qty = itemQty
 				price = price of selectItem
 			END ADD
 		END IF
-		FOR order in newCustomer GET orders
-			ADD price from order to currentTotalPrice
-		DISPLAY newCustomer orders AND currentTotalPrice
+		FOR itemOrder in newOrder GET items
+			ADD (price from itemOrder * Qty from itemOrder) to currentTotalPrice
+		END FOR
+		SET totalPrice in newOrder to currentTotalPrice
+		DISPLAY newOrder items AND currentTotalPrice
 		PROMPT continueSelectingItemes
 		IF continueSelectingItemes = n THEN
 			selectingItems = FALSE 
 		END IF 
 	END WHILE
+	ADD newOrder to newCustomer orders
 	ADD newCustomer to currentStoreData customer data
 	SAVE updated currentStoreData to stores
 	SAVE updated stores to storage
 	CALL displayStore with data inputs of currentStore, and currentStoreData
 END newCustomer
 
+BEGIN selectCustomerOrder
+	SET customerData to GET customerName
+		from currentStoreData customer data
+	SET orders to customerData orders
+	FOR each order in orders
+		SET choice to index of order within orders
+		DISPLAY choice+1, name from order, totalPrice from order
+	END FOR
+	PROMPT selectedOrder
+	IF selectedOrder > 0
+	AND selectedOrder <= number of orders THEN
+		SET selectedOrderData to orders[selectedOrder-1]
+		CALL modifyOrdercustomer with data input of selectedOrderData, customerName, currentStore, currentStoreData
+	END IF
+END selectCustomerOrder
+
+
+BEGIN removeCustomerOrder
+	SET customerData to GET customerName from currentStoreData customer data
+	SET orders to customerData orders
+	FOR each order in orders
+		SET choice to index of order within orders
+		DISPLAY choice+1, name from order, totalPrice from order
+	END FOR
+	PROMPT selectedOrder
+	IF selectedOrder > 0
+	AND selectedOrder <= number of orders THEN
+		REMOVE orders[selectedOrder-1] from customerData orders
+		SAVE updated currentStoreData to stores
+		SAVE updated stores to storage
+		CALL displayStore with data inputs of currentStore, currentStoreData
+	END IF
+END removeCustomerOrder
+
+
 BEGIN modifyOrdercustomer
 	SET customerData to customer data in currentStoreData
-	SET orders to customerName in customerData orders data
+	SET orders to selectedOrderData items
 	SET orderSelecting to TRUE
 	SET numOrders to GET number of elements in orders
-
 	WHILE orderSelecting = TRUE DO
 		SET currentTotalPrice to 0
 
@@ -83,8 +131,9 @@ BEGIN modifyOrdercustomer
 		END FOR
 
 		PROMPT selectedOrder
-
+		
 		IF selectedOrder < numOrders+1 AND selectedOrder > 0 THEN
+			SET selectedOrderIndex to selectedOrder - 1
 			SET selectedOrderData to orders[selectedOrder-1]
 
 			SET editAction to PROMPT modify quantity(1)/remove item(2)/cancel(3)
@@ -96,10 +145,15 @@ BEGIN modifyOrdercustomer
 					DISPLAY Quantity must be greater than 0
 				ELSE
 					SET Qty in selectedOrderData to newQty
+					SET orders[selectedOrderIndex] to selectedOrderData
+
 				END IF
+				
 
 			ELSE IF editAction = remove OR 2 THEN
 				REMOVE selectedOrderData from orders
+				SET numOrders to numOrders - 1
+				
 
 			ELSE IF editAction = cancel OR 3 THEN
 				orderSelecting = FALSE
@@ -108,6 +162,7 @@ BEGIN modifyOrdercustomer
 			FOR each order in orders
 				ADD (price from order * Qty from order) to currentTotalPrice
 			END FOR
+			SET totalPrice in selectedOrderData to currentTotalPrice
 
 			DISPLAY updated orders
 			DISPLAY currentTotalPrice
@@ -120,7 +175,7 @@ BEGIN modifyOrdercustomer
 		END IF
 	END WHILE
 
-	SAVE updated orders to customerName in customerData
+	SAVE updated orders to customerData orders
 	SAVE updated currentStoreData to stores
 	SAVE updated stores to storage
 
