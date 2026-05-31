@@ -47,7 +47,7 @@ BEGIN addnewCustomer
 			END IF
 		END WHILE
 		IF removeItemFromOrder = n THEN
-			SET orderName to "order" JOINING numOrders
+			SET orderName to "order" JOINING numOrderasdasdAds
 			ADD orderName to newCustomer WITH data	
 				item = selectItem
 				Qty = itemQty
