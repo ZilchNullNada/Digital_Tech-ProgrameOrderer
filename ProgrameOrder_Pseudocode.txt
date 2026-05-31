@@ -104,7 +104,7 @@ BEGIN updateOrderStatus
 
     DISPLAY Current Status: status from selectedOrderData
 
-    PROMPT newStatus "pending(1)/preparing(2)/completed(3)"
+    PROMPT newStatus "pending(1)/preparing(2)/completed(3)" 
 
     IF newStatus = 1 OR pending THEN
         SET status in selectedOrderData to "pending"
