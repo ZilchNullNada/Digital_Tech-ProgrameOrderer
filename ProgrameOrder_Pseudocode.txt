@@ -10,10 +10,20 @@ BEGIN addnewCustomer
 	PROMPT customerName
 	SET numOrders to 0
 	SET selectingItems to TRUE
+	IF customerName is in currentStoreData customer data THEN
+		DISPLAY Customer already exists
+		SET action to PROMPT "Do you want to modify(1)/remove(2) that customer's order or Cancel action(3)"
+		IF action = modify or 1 THEN
+			CALL modifyOrdercustomer with data input of customerName, currentStore, currentStoreData
+		ELSE IF action = remove or 2 THEN
+			CALL removeOrdercustomer with data input of customerName, currentStore, currentStoreData
+		END IF
+		RETURN
+	END IF
 
 	CREATE newCustomer WITH data
 		name = customerName
-		orders = NULL
+		orders = empty array
 	END CREATE 
 
 	WHILE selectingItems = TRUE DO
@@ -52,7 +62,85 @@ BEGIN addnewCustomer
 			selectingItems = FALSE 
 		END IF 
 	END WHILE
+	ADD newCustomer to currentStoreData customer data
+	SAVE updated currentStoreData to stores
+	SAVE updated stores to storage
+	CALL displayStore with data inputs of currentStore, and currentStoreData
 END newCustomer
+
+BEGIN modifyOrdercustomer
+	SET customerData to customer data in currentStoreData
+	SET orders to customerName in customerData orders data
+	SET orderSelecting to TRUE
+	SET numOrders to GET number of elements in orders
+
+	WHILE orderSelecting = TRUE DO
+		SET currentTotalPrice to 0
+
+		FOR each order in orders
+			SET choice to index of each order within orders
+			DISPLAY choice+1, item from order, Qty from order, price from order
+		END FOR
+
+		PROMPT selectedOrder
+
+		IF selectedOrder < numOrders+1 AND selectedOrder > 0 THEN
+			SET selectedOrderData to orders[selectedOrder-1]
+
+			SET editAction to PROMPT modify quantity(1)/remove item(2)/cancel(3)
+
+			IF editAction = modify OR 1 THEN
+				PROMPT newQty
+
+				IF newQty <= 0 THEN
+					DISPLAY Quantity must be greater than 0
+				ELSE
+					SET Qty in selectedOrderData to newQty
+				END IF
+
+			ELSE IF editAction = remove OR 2 THEN
+				REMOVE selectedOrderData from orders
+
+			ELSE IF editAction = cancel OR 3 THEN
+				orderSelecting = FALSE
+			END IF
+
+			FOR each order in orders
+				ADD (price from order * Qty from order) to currentTotalPrice
+			END FOR
+
+			DISPLAY updated orders
+			DISPLAY currentTotalPrice
+
+			PROMPT continueEditing
+
+			IF continueEditing = n THEN
+				orderSelecting = FALSE
+			END IF
+		END IF
+	END WHILE
+
+	SAVE updated orders to customerName in customerData
+	SAVE updated currentStoreData to stores
+	SAVE updated stores to storage
+
+	CALL displayStore with data inputs of currentStore, and currentStoreData
+END modifyOrdercustomer
+
+BEGIN removeOrdercustomer
+	PROMPT confirmRemoval
+
+	IF confirmRemoval = y THEN
+		REMOVE customerName from currentStoreData customer data
+
+		SAVE updated currentStoreData to stores
+		SAVE updated stores to storage
+
+		CALL displayStore with data inputs of currentStore, and currentStoreData
+	END IF
+
+	RETURN
+END removeOrdercustomer
 
 BEGIN addnewItem
 	PROMPT itemName
@@ -82,7 +170,7 @@ BEGIN addnewItem
 		productionCost = itemProductionCost
 		description = itemDescription
 	END CREATE
-	ADD newItem currentStoreData items data
+	ADD newItem to currentStoreData items data
 	SAVE updated currentStoreData to stores
 	SAVE updated stores to storage
 	CALL displayStore with data inputs of currentStore, and currentStoreData
